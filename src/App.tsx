@@ -2,11 +2,20 @@ import { useState, useEffect } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import WavetableVisualizer from './WavetableVisualizer'
 import { LineChart, Line, XAxis, YAxis } from 'recharts';
 
 function App() {
-  const [count, setCount] = useState(0)
-  const [data, setData] = useState([]);
+  const [count, setCount] = useState<number>(0)
+  const [data, setData] = useState<{ x: number, y: number }[]>([]);
+
+  const visualizer = new WavetableVisualizer('wavetable-visualizer');
+  visualizer.generateWavetable([
+    { frame: 0, shape: 'sine' },
+    { frame: 21, shape: 'square' },
+    { frame: 42, shape: 'sawtooth' },
+    { frame: 63, shape: 'triangle' }
+  ]);
 
   useEffect(() => {
     const newData = [];
@@ -16,6 +25,7 @@ function App() {
       newData.push({ x, y });
     }
     setData(newData);
+    visualizer.render();
   }, []);
 
   return (
@@ -41,13 +51,9 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
-      <div>
-        <LineChart width={500} height={300} data={data}>
-          <Line type="monotone" dot={false} stroke="#888" strokeWidth={2} />
-          <XAxis dataKey="x" />
-          <YAxis dataKey="y" />
-        </LineChart>
-      </div>
+      <p> Hello2 </p>
+      <div id="wavetable-visualizer" />
+      <p> again </p>
     </>
   )
 }
