@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import type { WaveShapeKeyframe, Wavetable } from './wavetableUtils';
-import { generateWavetable } from './wavetableUtils';
+import React, { useState } from 'react';
+import type { WavetableWithKeyframes } from './wavetableUtils';
 import ButtonGroup from './ButtonGroup';
 import SingleWaveformChart from './SingleWaveformChart';
 import TableWaveformChart from './TableWaveformChart';
@@ -15,38 +14,18 @@ const colorScale = d3.scaleLinear<string>()
 interface WavetableSynthVisualizerProps {
   width?: number;
   height?: number;
-  waveTableFrames?: number;
-  samplesPerFrame?: number;
-  keyframes: WaveShapeKeyframe[];
+  wavetable: WavetableWithKeyframes | undefined,
+  numberFrames?: number;
 }
 
 const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
   width = 800,
   height = 400,
-  waveTableFrames = 64,
-  samplesPerFrame = 256,
-  keyframes,
+  wavetable,
+  numberFrames = 64,
 }) => {
-  const [wavetable, setWavetable] = useState<Wavetable>([]);
   const [selectedFrame, setSelectedFrame] = useState(0);
   const [selectedChartType, setSelectedChartType] = useState<ChartType>('table');
-
-  useEffect(() => {
-    if (keyframes.length < 2) {
-      console.error("At least two keyframes are required");
-      return;
-    }
-
-    const sortedKeyframes = [...keyframes].sort((a, b) => a.frame - b.frame);
-
-    if (sortedKeyframes[0].frame !== 0 || sortedKeyframes[sortedKeyframes.length - 1].frame !== waveTableFrames - 1) {
-      console.error("Keyframes must include frame 0 and the last frame");
-      return;
-    }
-
-    const newWavetable = generateWavetable(sortedKeyframes, samplesPerFrame);
-    setWavetable(newWavetable);
-  }, [keyframes, waveTableFrames, samplesPerFrame]);
 
   const handleFrameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedFrame(Number(event.target.value));
@@ -54,6 +33,12 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
 
   const handleSelectChartType = (value: ChartType) => {
     setSelectedChartType(value);
+  }
+
+  if (wavetable === undefined) {
+    return (
+      <div>Error - no valid waveform</div>
+    )
   }
 
   return (
@@ -65,7 +50,7 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
           <input
             type="range"
             min={0}
-            max={waveTableFrames - 1}
+            max={numberFrames - 1}
             value={selectedFrame}
             onChange={handleFrameChange}
             className="w-full"
@@ -76,20 +61,20 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
 
       <div className={'flex min-w-0'}>
         <SingleWaveformChart
-          data={wavetable[selectedFrame]}
+          data={wavetable.data[selectedFrame]}
           width={width}
           height={height}
-          lineColor={colorScale(selectedFrame / waveTableFrames)}
+          lineColor={colorScale(selectedFrame / numberFrames)}
           hideChart={selectedChartType != 'single'}
         />
         <TableWaveformChart
           width={width}
           height={height}
-          wavetable={wavetable}
+          wavetable={wavetable.data}
           selectedFrame={selectedFrame}
           colorScale={colorScale}
           nonKeyframeColor='#dddddd'
-          keyframeIndexes={new Set(keyframes.map(v => v.frame))}
+          keyframeIndexes={wavetable.keyframes}
           hideChart={selectedChartType != 'table'}
         />
       </div>

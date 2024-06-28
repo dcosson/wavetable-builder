@@ -1,12 +1,25 @@
 export type WaveformData = number[];
-export type Wavetable = WaveformData[];
-
-export type WaveShape = 'sine' | 'square' | 'sawtooth' | 'triangle';
-
-export interface WaveShapeKeyframe {
+export interface WaveformDataWithKeyframe {
   frame: number;
-  shape: WaveShape;
+  data: WaveformData;
 }
+export type Wavetable = WaveformData[];
+export interface WavetableWithKeyframes {
+  keyframes: Set<number>,
+  data: Wavetable,
+}
+
+export type WaveShape = 'none' | 'sine' | 'square' | 'sawtooth' | 'triangle';
+export type LabeledWaveShape = { 'value': WaveShape, 'label': string };
+export const LabeledWaveShapes: LabeledWaveShape[] = [
+  { value: 'none', label: 'None' },
+  { value: 'sine', label: 'Sin' },
+  { value: 'square', label: 'Sqr' },
+  { value: 'sawtooth', label: 'Saw' },
+  { value: 'triangle', label: 'Tri' },
+];
+
+
 export const generateWaveform = (shape: WaveShape, samplesPerFrame: number): WaveformData => {
   const waveform = new Array(samplesPerFrame).fill(0);
   const frequency = 1; // One cycle per frame
@@ -14,9 +27,13 @@ export const generateWaveform = (shape: WaveShape, samplesPerFrame: number): Wav
   for (let i = 0; i < samplesPerFrame; i++) {
     const t = i / samplesPerFrame;
     switch (shape) {
+      case 'none':
+        waveform[i] = 0;
+        break;
       case 'sine':
         waveform[i] = Math.sin(2 * Math.PI * frequency * t);
-        break; case 'square':
+        break;
+      case 'square':
         waveform[i] = Math.sign(Math.sin(2 * Math.PI * frequency * t));
         break;
       case 'sawtooth':
@@ -30,24 +47,49 @@ export const generateWaveform = (shape: WaveShape, samplesPerFrame: number): Wav
   return waveform;
 };
 
-const interpolateWaveforms = (waveform1: WaveformData, waveform2: WaveformData, t: number): WaveformData => {
-  return waveform1.map((v, i) => v * (1 - t) + waveform2[i] * t);
-};
+export const generateWavetable = (keyframes: WaveformDataWithKeyframe[], numberFrames: number, samplesPerFrame: number): WavetableWithKeyframes | undefined => {
+  // Sort Keyframes and validate
+  if (keyframes.length < 2) {
+    console.error("At least two keyframes are required");
+    return;
+  }
+  const sortedKeyframes = [...keyframes].sort((a, b) => a.frame - b.frame);
+  if (sortedKeyframes[0].frame != 0) {
+    console.error("First keyframe must be set");
+    return;
+  }
+  if (sortedKeyframes[keyframes.length - 1].frame != numberFrames - 1) {
+    console.error(`Last keyframe (number ${numberFrames - 1} must be set`);
+    return;
+  }
+  for (let i = 0; i < sortedKeyframes.length; i++) {
+    if (sortedKeyframes[i].data.length != samplesPerFrame) {
+      console.error(`Expected all waveforms to have ${samplesPerFrame}, but frame ${sortedKeyframes[i].frame} has ${sortedKeyframes[i].data.length} samples`);
+      return;
+    }
+  }
 
-export const generateWavetable = (sortedKeyframes: WaveShapeKeyframe[], samplesPerFrame: number): Wavetable => {
-  const newWavetable: Wavetable = [];
+  const newWavetable: WavetableWithKeyframes = { keyframes: new Set([]), data: [] }
 
   for (let i = 0; i < sortedKeyframes.length - 1; i++) {
     const startKeyframe = sortedKeyframes[i];
     const endKeyframe = sortedKeyframes[i + 1];
-    const startWaveform = generateWaveform(startKeyframe.shape, samplesPerFrame);
-    const endWaveform = generateWaveform(endKeyframe.shape, samplesPerFrame);
+    const startWaveform = startKeyframe.data;
+    const endWaveform = endKeyframe.data;
 
     for (let frame = startKeyframe.frame; frame <= endKeyframe.frame; frame++) {
       const t = (frame - startKeyframe.frame) / (endKeyframe.frame - startKeyframe.frame);
-      newWavetable[frame] = interpolateWaveforms(startWaveform, endWaveform, t);
+      newWavetable.data[frame] = interpolateWaveforms(startWaveform, endWaveform, t);
     }
   }
 
+  sortedKeyframes.forEach(kf => {
+    newWavetable.keyframes.add(kf.frame);
+  })
+
   return newWavetable;
+};
+
+const interpolateWaveforms = (waveform1: WaveformData, waveform2: WaveformData, t: number): WaveformData => {
+  return waveform1.map((v, i) => v * (1 - t) + waveform2[i] * t);
 };
