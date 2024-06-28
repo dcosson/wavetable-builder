@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import type { WaveShapeKeyframe, Wavetable } from './wavetableUtils';
 import { generateWavetable } from './wavetableUtils';
 import ButtonGroup from './ButtonGroup';
+import SingleWaveformChart from './SingleWaveformChart';
 import * as d3 from 'd3';
 
 type ChartType = 'single' | 'table';
@@ -21,13 +22,11 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
   samplesPerFrame = 256,
   keyframes,
 }) => {
-  const singleWaveformRef = useRef<SVGSVGElement>(null);
   const surfacePlotRef = useRef<SVGSVGElement>(null);
   const [wavetable, setWavetable] = useState<Wavetable>([]);
   const [selectedFrame, setSelectedFrame] = useState(0);
-  const [selectedChartType, setSelectedChartType] = useState<ChartType>('table');
+  const [selectedChartType, setSelectedChartType] = useState<ChartType>('single');
 
-  const margin = { top: 20, right: 20, bottom: 30, left: 40 };
   const minLineWidth = 1;
   const maxLineWidth = 3;
 
@@ -57,47 +56,11 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
       return
     }
 
-    if (selectedChartType == 'single') {
-      renderSingleWaveform(selectedFrame);
-    } else {
+    if (selectedChartType == 'table') {
       renderSurfacePlot(selectedFrame);
     }
   }, [wavetable, selectedFrame, selectedChartType]);
 
-
-  const renderSingleWaveform = (frameIndex: number) => {
-    if (!singleWaveformRef.current) return;
-
-    const svg = d3.select(singleWaveformRef.current);
-    svg.selectAll("*").remove();
-
-    const xScale = d3.scaleLinear()
-      .domain([0, samplesPerFrame - 1])
-      .range([margin.left, width - margin.right]);
-
-    const yScale = d3.scaleLinear()
-      .domain([-1, 1])
-      .range([height - margin.bottom, margin.top]);
-
-    const line = d3.line<number>()
-      .x((_, i) => xScale(i))
-      .y(d => yScale(d));
-
-    svg.append('path')
-      .datum(wavetable[frameIndex])
-      .attr('fill', 'none')
-      .attr('stroke', colorScale(frameIndex / waveTableFrames))
-      .attr('stroke-width', 1.5)
-      .attr('d', line);
-
-    svg.append('g')
-      .attr('transform', `translate(0,${height - margin.bottom})`)
-      .call(d3.axisBottom(xScale));
-
-    svg.append('g')
-      .attr('transform', `translate(${margin.left},0)`)
-      .call(d3.axisLeft(yScale).tickFormat(_ => '').tickSize(0));
-  };
 
   const renderSurfacePlot = (selectedFrame: number) => {
     if (!surfacePlotRef.current) return;
@@ -178,8 +141,13 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
       </div >
 
       <div className={'flex min-w-0'}>
-        {selectedChartType == 'single' &&
-          <svg ref={singleWaveformRef} viewBox={`0 0 ${width} ${height}`}></svg>}
+        <SingleWaveformChart
+          data={wavetable[selectedFrame]}
+          width={width}
+          height={height}
+          lineColor={colorScale(selectedFrame / waveTableFrames)}
+          hideChart={selectedChartType != 'single'}
+        />
         {selectedChartType == 'table' &&
           <svg ref={surfacePlotRef} width={'100%'} height={'100%'} viewBox={`0 ${-1 * maxLineWidth} ${width} ${height + 2 * maxLineWidth}`}></svg>}
       </div>
