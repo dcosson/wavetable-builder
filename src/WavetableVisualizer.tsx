@@ -159,11 +159,12 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
   }
 
   const handleChartTypeSingle = (_: React.MouseEvent<HTMLButtonElement>) => {
+    console.log('set single');
     setSelectedChartType('single');
   }
 
   return (
-    <div>
+    <div className='flex flex-col'>
       <div>
         <div className="flex justify-center">
           <button type="button" className={"py-3 px-4 inline-flex justify-center items-center gap-2 -ml-px first:rounded-l-lg first:ml-0 last:rounded-r-lg border font-medium bg-white text-gray-900 align-middle hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm "} onClick={handleChartTypeTable}>
@@ -173,18 +174,24 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
             Single
           </button>
         </div>
-        <input
-          type="range"
-          min={0}
-          max={waveTableFrames - 1}
-          value={selectedFrame}
-          onChange={handleFrameChange}
-          className="w-full"
-        />
-        <p className="text-right">Frame: {selectedFrame}</p>
+        <div className="flex">
+          <input
+            type="range"
+            min={0}
+            max={waveTableFrames - 1}
+            value={selectedFrame}
+            onChange={handleFrameChange}
+            className="w-full"
+          />
+          <p className="text-right flex-1">Frame:&nbsp;{selectedFrame}</p>
+        </div>
       </div>
-      <svg ref={singleWaveformRef} width={width} height={height} display={selectedChartType == 'single' && 'inline' || 'none'}></svg>
-      <svg ref={surfacePlotRef} width={width} height={height} viewBox={`0 ${-1 * maxLineWidth} ${width} ${height + 2 * maxLineWidth}`} display={selectedChartType == 'table' && 'inline' || 'none'}></svg>
+      <div className={'flex min-w-0'}>
+        {selectedChartType == 'single' &&
+          <svg ref={singleWaveformRef} viewBox={`0 0 ${width} ${height}`}></svg>}
+        {selectedChartType == 'table' &&
+          <svg ref={surfacePlotRef} width={'100%'} height={'100%'} viewBox={`0 ${-1 * maxLineWidth} ${width} ${height + 2 * maxLineWidth}`}></svg>}
+      </div>
     </div>
   );
 };
