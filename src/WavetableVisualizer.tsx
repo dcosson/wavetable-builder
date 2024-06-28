@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import type { WaveShapeKeyframe, Wavetable } from './wavetableUtils';
 import { generateWavetable } from './wavetableUtils';
+import ButtonGroup from './ButtonGroup';
 import * as d3 from 'd3';
 
 type ChartType = 'single' | 'table';
@@ -154,27 +155,16 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
     setSelectedFrame(Number(event.target.value));
   };
 
-  const handleChartTypeTable = (_: React.MouseEvent<HTMLButtonElement>) => {
-    setSelectedChartType('table');
-  }
-
-  const handleChartTypeSingle = (_: React.MouseEvent<HTMLButtonElement>) => {
-    console.log('set single');
-    setSelectedChartType('single');
+  const handleSelectChartType = (value: ChartType) => {
+    setSelectedChartType(value);
   }
 
   return (
-    <div className='flex flex-col'>
-      <div>
-        <div className="flex justify-center">
-          <button type="button" className={"py-3 px-4 inline-flex justify-center items-center gap-2 -ml-px first:rounded-l-lg first:ml-0 last:rounded-r-lg border font-medium bg-white text-gray-900 align-middle hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm "} onClick={handleChartTypeTable}>
-            Table
-          </button>
-          <button type="button" className="py-3 px-4 inline-flex justify-center items-center gap-2 -ml-px first:rounded-l-lg first:ml-0 last:rounded-r-lg border font-medium bg-white text-gray-900 align-middle hover:bg-gray-50 focus:z-10 focus:outline-none focus:ring-2 focus:ring-indigo-600 transition-all text-sm" onClick={handleChartTypeSingle}>
-            Single
-          </button>
-        </div>
-        <div className="flex">
+    <div className='flex flex-col gap-6'>
+      <div className="flex flex-row gap-4">
+
+        <ButtonGroup options={[{ value: 'table', label: 'Table' }, { value: 'single', label: 'Single' }]} defaultSelected={selectedChartType} onSelect={handleSelectChartType} />
+        <div className="inline-flex grow w-32 gap-2">
           <input
             type="range"
             min={0}
@@ -183,16 +173,17 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
             onChange={handleFrameChange}
             className="w-full"
           />
-          <p className="text-right flex-1">Frame:&nbsp;{selectedFrame}</p>
+          <p className="my-auto">Frame:&nbsp;{selectedFrame}</p>
         </div>
-      </div>
+      </div >
+
       <div className={'flex min-w-0'}>
         {selectedChartType == 'single' &&
           <svg ref={singleWaveformRef} viewBox={`0 0 ${width} ${height}`}></svg>}
         {selectedChartType == 'table' &&
           <svg ref={surfacePlotRef} width={'100%'} height={'100%'} viewBox={`0 ${-1 * maxLineWidth} ${width} ${height + 2 * maxLineWidth}`}></svg>}
       </div>
-    </div>
+    </div >
   );
 };
 
