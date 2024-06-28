@@ -28,6 +28,7 @@ function App() {
 
   return (
     <>
+      <WavetableVisualizer keyframes={keyframes} />
       <div>
         <a href="https://vitejs.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
@@ -50,7 +51,6 @@ function App() {
         Click on the Vite and React logos to learn more
       </p>
       <p> Hello2 </p>
-      <WavetableVisualizer keyframes={keyframes} />
       <p> again </p>
     </>
   )

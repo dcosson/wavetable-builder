@@ -3,16 +3,15 @@ import * as d3 from 'd3';
 
 type WaveformData = number[];
 type Wavetable = WaveformData[];
-type Point3D = { x: number; y: number; z: number };
 
 type WaveShape = 'sine' | 'square' | 'sawtooth' | 'triangle';
 
-interface WaveShapeKeyframe {
+export interface WaveShapeKeyframe {
   frame: number;
   shape: WaveShape;
 }
 
-interface WavetableVisualizerProps {
+interface WavetableSynthVisualizerProps {
   width?: number;
   height?: number;
   waveTableFrames?: number;
@@ -20,7 +19,7 @@ interface WavetableVisualizerProps {
   keyframes: WaveShapeKeyframe[];
 }
 
-const WavetableVisualizer: React.FC<WavetableVisualizerProps> = ({
+const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
   width = 800,
   height = 400,
   waveTableFrames = 64,
@@ -33,6 +32,8 @@ const WavetableVisualizer: React.FC<WavetableVisualizerProps> = ({
   const [selectedFrame, setSelectedFrame] = useState(0);
 
   const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+  const minLineWidth = 1;
+  const maxLineWidth = 3;
 
   useEffect(() => {
     if (keyframes.length < 2) {
@@ -54,7 +55,7 @@ const WavetableVisualizer: React.FC<WavetableVisualizerProps> = ({
   useEffect(() => {
     if (wavetable.length > 0) {
       // renderSingleWaveform(selectedFrame);
-      renderSurfacePlot();
+      renderSurfacePlot(selectedFrame);
     }
   }, [wavetable, selectedFrame]);
 
@@ -67,8 +68,7 @@ const WavetableVisualizer: React.FC<WavetableVisualizerProps> = ({
       switch (shape) {
         case 'sine':
           waveform[i] = Math.sin(2 * Math.PI * frequency * t);
-          break;
-        case 'square':
+          break; case 'square':
           waveform[i] = Math.sign(Math.sin(2 * Math.PI * frequency * t));
           break;
         case 'sawtooth':
@@ -137,7 +137,6 @@ const WavetableVisualizer: React.FC<WavetableVisualizerProps> = ({
       .attr('transform', `translate(${margin.left},0)`)
       .call(d3.axisLeft(yScale));
 
-    // Add frame number text
     svg.append('text')
       .attr('x', width - margin.right)
       .attr('y', margin.top)
@@ -145,52 +144,50 @@ const WavetableVisualizer: React.FC<WavetableVisualizerProps> = ({
       .text(`Frame: ${frameIndex}`);
   };
 
-  const renderSurfacePlot = () => {
+  const renderSurfacePlot = (selectedFrame: number) => {
     if (!surfacePlotRef.current) return;
 
     const svg = d3.select(surfacePlotRef.current);
     svg.selectAll("*").remove();
 
-    const data: Point3D[] = wavetable.flatMap((frame, frameIndex) =>
-      frame.map((value, sampleIndex) => ({
-        x: sampleIndex,
-        y: frameIndex,
-        z: value
-      }))
-    );
-
     const xScale = d3.scaleLinear()
       .domain([0, samplesPerFrame - 1])
-      .range([-width / 4, width / 4]);
+      .range([0, width]);
 
     const yScale = d3.scaleLinear()
       .domain([0, waveTableFrames - 1])
-      .range([-height / 4, height / 4]);
+      .range([0, -1 * height]);
 
     const zScale = d3.scaleLinear()
       .domain([-1, 1])
-      .range([0, 100]);
+      .range([-(waveTableFrames - 2) / waveTableFrames * height, height]);
 
     const colorScale = d3.scaleLinear<string>()
-      .domain([-1, 0, 1])
-      .range(['blue', 'white', 'red']);
+      .domain([0, 1])
+      .range(['blue', 'red']);
 
-    const surfacePath = d3.area3D<Point3D>()
-      .x(d => xScale(d.x))
-      .y(d => yScale(d.y))
-      .z(d => zScale(d.z))
-      .defined(d => !isNaN(d.z));
+    const area = d3.area<number>()
+      .x((_, i) => xScale(i))
+      .y(d => yScale(d));
 
-    svg.attr('transform', `translate(${width / 2},${height / 2})`);
+    const paths: any[] = [];
+    wavetable.forEach((frame, frameIndex) => {
+      console.log(`Rendering frame ${frameIndex} ${colorScale(frameIndex / waveTableFrames)}`, frame);
+      paths.push(svg.append('path')
+        .datum(frame)
+        .attr('fill', 'none')
+        .attr('stroke', colorScale(frameIndex / waveTableFrames))
+        .attr('stroke-width', minLineWidth)
+        .attr('d', area)
+        .attr('transform', `translate(0, ${zScale(frameIndex / (waveTableFrames))})`));
+    });
 
-    svg.selectAll('.surface')
-      .data(d3.group(data, d => d.y))
-      .enter().append('path')
-      .attr('class', 'surface')
-      .attr('d', ([, points]) => surfacePath(points))
-      .attr('fill', 'none')
-      .attr('stroke', ([, points]) => colorScale(d3.mean(points, d => d.z) || 0))
-      .attr('stroke-width', 0.5);
+    // Update frame indicator position when selected frame changes
+    const updateFrameIndicator = () => {
+      paths[selectedFrame].attr('stroke-width', maxLineWidth);
+    };
+
+    updateFrameIndicator();
   };
 
   const handleFrameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -211,9 +208,9 @@ const WavetableVisualizer: React.FC<WavetableVisualizerProps> = ({
         />
         <p className="text-center">Frame: {selectedFrame}</p>
       </div>
-      <svg ref={surfacePlotRef} width={width} height={height}></svg>
+      <svg ref={surfacePlotRef} width={width} height={height} viewBox={`0 ${-1 * maxLineWidth} ${width} ${height + 2 * maxLineWidth}`}></svg>
     </div>
   );
 };
 
-export default WavetableVisualizer;
+export default WavetableSynthVisualizer;
