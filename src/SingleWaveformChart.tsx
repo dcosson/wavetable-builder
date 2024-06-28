@@ -25,7 +25,7 @@ const SingleWaveformChart: React.FC<SingleWaveformChartProps> = ({
       return
     }
     renderSingleWaveform();
-  }, [hideChart, data]);
+  }, [data, lineColor, hideChart]);
 
   const renderSingleWaveform = () => {
     if (!singleWaveformRef.current) {

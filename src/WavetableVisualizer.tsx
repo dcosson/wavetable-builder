@@ -1,11 +1,16 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { WaveShapeKeyframe, Wavetable } from './wavetableUtils';
 import { generateWavetable } from './wavetableUtils';
 import ButtonGroup from './ButtonGroup';
 import SingleWaveformChart from './SingleWaveformChart';
+import TableWaveformChart from './TableWaveformChart';
 import * as d3 from 'd3';
 
 type ChartType = 'single' | 'table';
+
+const colorScale = d3.scaleLinear<string>()
+  .domain([0, 1])
+  .range(['steelblue', 'salmon']);
 
 interface WavetableSynthVisualizerProps {
   width?: number;
@@ -22,17 +27,9 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
   samplesPerFrame = 256,
   keyframes,
 }) => {
-  const surfacePlotRef = useRef<SVGSVGElement>(null);
   const [wavetable, setWavetable] = useState<Wavetable>([]);
   const [selectedFrame, setSelectedFrame] = useState(0);
-  const [selectedChartType, setSelectedChartType] = useState<ChartType>('single');
-
-  const minLineWidth = 1;
-  const maxLineWidth = 3;
-
-  const colorScale = d3.scaleLinear<string>()
-    .domain([0, 1])
-    .range(['steelblue', 'salmon']);
+  const [selectedChartType, setSelectedChartType] = useState<ChartType>('table');
 
   useEffect(() => {
     if (keyframes.length < 2) {
@@ -50,69 +47,6 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
     const newWavetable = generateWavetable(sortedKeyframes, samplesPerFrame);
     setWavetable(newWavetable);
   }, [keyframes, waveTableFrames, samplesPerFrame]);
-
-  useEffect(() => {
-    if (wavetable.length == 0) {
-      return
-    }
-
-    if (selectedChartType == 'table') {
-      renderSurfacePlot(selectedFrame);
-    }
-  }, [wavetable, selectedFrame, selectedChartType]);
-
-
-  const renderSurfacePlot = (selectedFrame: number) => {
-    if (!surfacePlotRef.current) return;
-
-    const svg = d3.select(surfacePlotRef.current);
-    svg.selectAll("*").remove();
-
-    const xScale = d3.scaleLinear()
-      .domain([0, samplesPerFrame - 1])
-      .range([0, width]);
-
-    const yScale = d3.scaleLinear()
-      .domain([0, waveTableFrames - 1])
-      .range([0, -1 * height]);
-
-    const zScale = d3.scaleLinear()
-      .domain([-1, 1])
-      .range([-(waveTableFrames - 2) / waveTableFrames * height, height]);
-
-    const keyframeColorScale = (frameIndex: number) => {
-      if (keyframes.map(k => k.frame).includes(frameIndex)) {
-        return colorScale(frameIndex / waveTableFrames);
-      } else {
-        return '#dddddd'
-      }
-    }
-
-    const area = d3.area<number>()
-      .x((_, i) => xScale(i))
-      .y(d => yScale(d));
-
-    const paths: any[] = [];
-    wavetable.forEach((frame, frameIndex) => {
-      // console.log(`Rendering frame ${frameIndex} ${colorScale(frameIndex / waveTableFrames)}`, frame);
-      paths.push(svg.append('path')
-        .datum(frame)
-        .attr('fill', 'none')
-        .attr('stroke', keyframeColorScale(frameIndex))
-        .attr('stroke-width', minLineWidth)
-        .attr('d', area)
-        .attr('transform', `translate(0, ${zScale(frameIndex / (waveTableFrames))})`));
-    });
-
-    // Update frame indicator position when selected frame changes
-    const updateFrameIndicator = () => {
-      paths[selectedFrame]
-        .attr('stroke-width', maxLineWidth)
-        .attr('stroke', colorScale(selectedFrame / waveTableFrames));
-    };
-
-    updateFrameIndicator();
-  };
 
   const handleFrameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedFrame(Number(event.target.value));
@@ -148,8 +82,16 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
           lineColor={colorScale(selectedFrame / waveTableFrames)}
           hideChart={selectedChartType != 'single'}
         />
-        {selectedChartType == 'table' &&
-          <svg ref={surfacePlotRef} width={'100%'} height={'100%'} viewBox={`0 ${-1 * maxLineWidth} ${width} ${height + 2 * maxLineWidth}`}></svg>}
+        <TableWaveformChart
+          width={width}
+          height={height}
+          wavetable={wavetable}
+          selectedFrame={selectedFrame}
+          colorScale={colorScale}
+          nonKeyframeColor='#dddddd'
+          keyframeIndexes={new Set(keyframes.map(v => v.frame))}
+          hideChart={selectedChartType != 'table'}
+        />
       </div>
     </div >
   );
