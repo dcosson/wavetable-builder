@@ -14,7 +14,7 @@ interface WaveformWithMetadata {
 interface WavetableCreatorProps {
   numberFrames: number;
   samplesPerFrame: number;
-  wavetableChanged(wavetable: WavetableWithKeyframes): any;
+  wavetableChanged(wavetable: WavetableWithKeyframes | undefined): any;
 }
 
 const WavetableCreator: React.FC<WavetableCreatorProps> = ({
@@ -32,6 +32,9 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
   const currentWaveform = wavetableKeyframes[currentFrameIndex];
 
   useEffect(() => {
+    if (wavetableKeyframes.length == 0) {
+      wavetableChanged(undefined);
+    }
     const wavetable = generateWavetable(wavetableKeyframes.map(w => w.data), numberFrames, samplesPerFrame);
     if (wavetable) {
       wavetableChanged(wavetable);
@@ -123,27 +126,27 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
         </div>
 
         {currentWaveform !== undefined ? (
-          <>
-            <div>
-              <div className="flex flex-row gap-2">
-                <div className="grow">
-                  <ButtonGroup options={LabeledWaveShapes} selected={currentWaveform.shapeSelection} onSelect={currentShapeSelectionHandler} />
-                </div>
-                <button onClick={deleteFrame} className="w-8 grow-0 flex-end bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded">
-                  <TrashIcon />
-                </button>
-              </div>
-              <SingleWaveformChart data={currentWaveform.data} lineColor={'steelblue'} />
-            </div>
+          <div>
             <div className="flex flex-row gap-2">
-              <button onClick={saveNewWavetable} className="flex-end bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded disabled:bg-gray-400">
-                Save Wavetable
+              <div className="grow">
+                <ButtonGroup options={LabeledWaveShapes} selected={currentWaveform.shapeSelection} onSelect={currentShapeSelectionHandler} />
+              </div>
+              <button onClick={deleteFrame} className="w-8 grow-0 flex-end bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded">
+                <TrashIcon />
               </button>
-              <div className='grow' />
-              <button onClick={discardNewWavetable} className="grow-0 flex-end bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded">Discard Wavetable</button>
             </div>
-          </>
+            <SingleWaveformChart data={currentWaveform.data} lineColor={'steelblue'} />
+          </div>
         ) : (<></>)}
+        <div className="flex flex-row gap-2">
+          {currentWaveform !== undefined && (
+            <button onClick={saveNewWavetable} className="flex-end bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded disabled:bg-gray-400">
+              Save Wavetable
+            </button>
+          )}
+          <div className='grow' />
+          <button onClick={discardNewWavetable} className="grow-0 flex-end bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded">Discard Wavetable</button>
+        </div>
       </div >
     </div>
   )
