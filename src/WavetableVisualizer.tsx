@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { WavetableWithKeyframes } from './wavetableUtils';
+import type { WavetableWithMetadata } from './wavetableUtils';
 import ButtonGroup from './ButtonGroup';
 import SingleWaveformChart from './SingleWaveformChart';
 import TableWaveformChart from './TableWaveformChart';
@@ -15,7 +15,7 @@ const colorScale = d3.scaleLinear<string>()
 interface WavetableSynthVisualizerProps {
   width?: number;
   height?: number;
-  wavetable: WavetableWithKeyframes | undefined,
+  wavetable?: WavetableWithMetadata;
   numberFrames?: number;
 }
 

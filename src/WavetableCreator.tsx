@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import type { WaveformData, WaveShape, WavetableWithKeyframes } from './wavetableUtils';
+import type { WaveformData, WaveShape, WavetableWithMetadata } from './wavetableUtils';
 import { LabeledWaveShapes, generateWaveform, generateWavetable } from './wavetableUtils';
 import { insertAtIndex } from './utils'
 import SingleWaveformChart from './SingleWaveformChart';
@@ -14,7 +14,7 @@ interface WaveformWithMetadata {
 interface WavetableCreatorProps {
   numberFrames: number;
   samplesPerFrame: number;
-  wavetableChanged(wavetable: WavetableWithKeyframes | undefined): any;
+  wavetableChanged(wavetable: WavetableWithMetadata | undefined): any;
 }
 
 const WavetableCreator: React.FC<WavetableCreatorProps> = ({

@@ -1,21 +1,12 @@
 import { useState } from 'react';
 import WavetableVisualizer from './WavetableVisualizer'
 import WavetableCreator from './WavetableCreator';
-import type { WavetableWithKeyframes } from './wavetableUtils';
+import type { WavetableWithMetadata } from './wavetableUtils';
 
 function App() {
-  const [wavetable, setWavetable] = useState<WavetableWithKeyframes | undefined>(undefined);
-  // const wavetable = generateWavetableOld(
-  //   [
-  //     { frame: 0, data: generateWaveform('sine', 256) },
-  //     { frame: 21, data: generateWaveform('square', 256) },
-  //     { frame: 42, data: generateWaveform('sawtooth', 256) },
-  //     { frame: 63, data: generateWaveform('triangle', 256) },
-  //   ],
-  //   64,
-  //   256);
+  const [wavetable, setWavetable] = useState<WavetableWithMetadata | undefined>(undefined);
 
-  const wavetableChangedHandler = (wavetable: WavetableWithKeyframes) => {
+  const wavetableChangedHandler = (wavetable: WavetableWithMetadata) => {
     setWavetable(wavetable)
   };
 
