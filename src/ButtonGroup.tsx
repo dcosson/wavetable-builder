@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface ButtonOption<T> {
   value: T;
@@ -7,15 +7,12 @@ interface ButtonOption<T> {
 
 interface ButtonGroupProps<T> {
   options: ButtonOption<T>[];
-  defaultSelected?: T;
+  selected?: T;
   onSelect: (value: T) => void;
 }
 
-const ButtonGroup = <T extends React.Key,>({ options, defaultSelected, onSelect }: ButtonGroupProps<T>) => {
-  const [selected, setSelected] = useState<T>(defaultSelected || options[0].value);
-
+const ButtonGroup = <T extends React.Key,>({ options, selected, onSelect }: ButtonGroupProps<T>) => {
   const handleClick = (value: T) => {
-    setSelected(value);
     onSelect(value);
   };
 

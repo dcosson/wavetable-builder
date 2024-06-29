@@ -1,35 +1,43 @@
-import React, { useState } from 'react';
-import type { WaveformData, WaveShape, WaveformDataWithKeyframe } from './wavetableUtils';
+import React, { useEffect, useState } from 'react';
+import type { WaveformData, WaveShape, WavetableWithKeyframes } from './wavetableUtils';
 import { LabeledWaveShapes, generateWaveform, generateWavetable } from './wavetableUtils';
+import { insertAtIndex } from './utils'
 import SingleWaveformChart from './SingleWaveformChart';
 import ButtonGroup from './ButtonGroup';
 import { TrashIcon } from '@heroicons/react/24/solid';
 
+interface WaveformWithMetadata {
+  data: WaveformData;
+  shapeSelection: WaveShape;
+}
+
 interface WavetableCreatorProps {
-  numberFrames: number,
-  samplesPerFrame: number,
+  numberFrames: number;
+  samplesPerFrame: number;
+  wavetableChanged(wavetable: WavetableWithKeyframes): any;
 }
 
 const WavetableCreator: React.FC<WavetableCreatorProps> = ({
   numberFrames,
   samplesPerFrame,
+  wavetableChanged,
 }) => {
   const [inProgress, setInProgress] = useState<boolean>(false);
-  const [currentShapeSelection, setCurrentShapeSelection] = useState<WaveShape>('none');
-  const [currentFrameNumber, setCurrentFrameNumber] = useState<number>(0);
-  const [currentWaveformData, setCurrentWaveformData] = useState<WaveformData>(generateWaveform(currentShapeSelection, samplesPerFrame));
 
+  const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(-1);
+  const [name, setName] = useState<string>('Empty Wavetable');
+  const [presetNumber, setPresetNumber] = useState<number | null>(null);
+  const [wavetableKeyframes, setWavetableKeyframes] = useState<WaveformWithMetadata[]>([]);
 
-  const [wavetableKeyframes, setWavetableKeyframes] = useState<WaveformDataWithKeyframe[]>([]);
+  const currentWaveform = wavetableKeyframes[currentFrameIndex];
 
-  // useEffect(() => {
-  //   setWavetable
-  //   if (wavetable.length == 0) {
-  //     renderWaveform(EmptyWaveform);
-  //   } else {
-  //     renderWaveform(wavetable[0])
-  //   }
-  // }, [keyframes]);
+  useEffect(() => {
+    const wavetable = generateWavetable(wavetableKeyframes.map(w => w.data), numberFrames, samplesPerFrame);
+    if (wavetable) {
+      wavetableChanged(wavetable);
+      console.log('wavetable changed', wavetable)
+    }
+  }, [wavetableKeyframes]);
 
   const newWavetableHandler = () => {
     setInProgress(true);
@@ -37,66 +45,108 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
 
   const discardNewWavetable = () => {
     setInProgress(false);
-    setCurrentShapeSelection('none');
-    setCurrentFrameNumber(0);
-    setCurrentWaveformData(generateWaveform('none', samplesPerFrame));
+    setCurrentFrameIndex(-1);
     setWavetableKeyframes([]);
   }
 
-  const saveFrame = () => {
-    // keyframes.push(currentWaveshape);
-    // setCurrentWaveshape(generateWaveform('none', samplesPerFrame));
+  const saveNewWavetable = () => {
+    setInProgress(false);
   }
 
   const newFrame = () => {
-    const nextFrame = (wavetableKeyframes.length > 0 && wavetableKeyframes[0].frame || 0) + 1;
-    setWavetableKeyframes(wavetableKeyframes.concat({ frame: nextFrame, data: currentWaveformData }))
+    const shapeSelection: WaveShape = 'none';
+    const data = generateWaveform(shapeSelection, samplesPerFrame);
+    const newIndex = currentFrameIndex + 1;
+    const newKeyframes = insertAtIndex(wavetableKeyframes, newIndex, { data, shapeSelection });
+    setWavetableKeyframes(newKeyframes);
+    setCurrentFrameIndex(newIndex);
+  }
+
+  const deleteFrame = () => {
+    const newKeyframes = [...wavetableKeyframes];
+    newKeyframes.splice(currentFrameIndex, 1);
+    setWavetableKeyframes(newKeyframes);
+    const nextFrameIndex = currentFrameIndex == 0 && newKeyframes.length > 0 ? 0 : currentFrameIndex - 1;
+    setCurrentFrameIndex(nextFrameIndex);
   }
 
   const selectFrame = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCurrentFrameNumber(Number(e.target.value));
+    setCurrentFrameIndex(Number(e.target.value));
   }
 
-  const currentShapeSelectionHandler = (value: WaveShape) => {
-    setCurrentShapeSelection(value);
-    setCurrentWaveformData(generateWaveform(value, samplesPerFrame));
+  const nameHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setName(e.target.value);
   }
 
+  const presetNumberHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPresetNumber(Number(e.target.value));
+  }
+
+  const currentShapeSelectionHandler = (shapeSelection: WaveShape) => {
+    const data = generateWaveform(shapeSelection, samplesPerFrame);
+    const newKeyframes = [...wavetableKeyframes];
+    newKeyframes[currentFrameIndex] = { data, shapeSelection }
+    setWavetableKeyframes(newKeyframes);
+  }
+
+  if (!inProgress) {
+    const text = wavetableKeyframes.length == 0 ? 'New Wavetable' : 'Edit Wavetable';
+    return (
+      <div className="flex-row my-8">
+        <button className="center bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded" onClick={newWavetableHandler}>{text}</button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-row m-8">
-      {!inProgress && <button className="center bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded" onClick={newWavetableHandler}>New Wavetable</button>}
-      {inProgress && (
-        <div className="flex flex-col p-8 pb-16 gap-4">
-          <h2 className="text-center">Creating New Wavetable ({numberFrames} frames x {samplesPerFrame} samples)</h2>
-          <div className='flex flex-row gap-2'>
-            <select className="grow-0 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" value={currentFrameNumber} onChange={selectFrame}>
-              {wavetableKeyframes.map((_, idx) => (
-                <option key={`option-${idx}`} value={idx}>Keyframe {idx}</option>
-              ))}
-            </select>
-            <button onClick={newFrame} className="grow-0 flex-end bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded disabled:bg-gray-400">
-              New Frame
-            </button>
+      <div className="flex flex-col p-8 pb-16 gap-4">
+        <h2 className="text-center">Creating New Wavetable ({numberFrames} frames x {samplesPerFrame} samples)</h2>
 
-
-          </div>
-          <div className="flex flex-row gap-2">
-            <div className="grow">
-              <ButtonGroup options={LabeledWaveShapes} defaultSelected={currentShapeSelection} onSelect={currentShapeSelectionHandler} />
-            </div>
-            <button onClick={saveFrame} className="grow-0 flex-end bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded disabled:bg-gray-400">
-              Save Frame
-            </button>
-            <button onClick={discardNewWavetable} className="w-8 grow-0 flex-end bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded">
-              <TrashIcon />
-            </button>
-          </div>
-          <SingleWaveformChart data={currentWaveformData} lineColor={'steelblue'} />
+        <div className='flex flex-row gap-2 h-8'>
+          <input className="border border-gray-900 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-1 min-w-36" type="text" value={name} onChange={nameHandler}></input>
+          <div className='grow' />
+          <label >Preset Number</label>
+          <input className="border border-gray-900 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-1 w-auto" type="number" value={presetNumber == null ? '' : presetNumber} onChange={presetNumberHandler}></input>
         </div>
-      )}
-    </div >
-  );
+
+        <div className='flex flex-row gap-2 h-8'>
+          <select className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-1 min-w-36" value={currentFrameIndex} onChange={selectFrame} disabled={wavetableKeyframes.length == 0}>
+            {wavetableKeyframes.map((_, idx) => (
+              <option key={`option-${idx}`} value={idx}>Keyframe {idx}</option>
+            ))}
+            {wavetableKeyframes.length == 0 && (<option>No Keyframes</option>)}
+          </select>
+          <button onClick={newFrame} className="flex-end bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded disabled:bg-gray-400">
+            New Frame
+          </button>
+        </div>
+
+        {currentWaveform !== undefined ? (
+          <>
+            <div>
+              <div className="flex flex-row gap-2">
+                <div className="grow">
+                  <ButtonGroup options={LabeledWaveShapes} selected={currentWaveform.shapeSelection} onSelect={currentShapeSelectionHandler} />
+                </div>
+                <button onClick={deleteFrame} className="w-8 grow-0 flex-end bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded">
+                  <TrashIcon />
+                </button>
+              </div>
+              <SingleWaveformChart data={currentWaveform.data} lineColor={'steelblue'} />
+            </div>
+            <div className="flex flex-row gap-2">
+              <button onClick={saveNewWavetable} className="flex-end bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded disabled:bg-gray-400">
+                Save Wavetable
+              </button>
+              <div className='grow' />
+              <button onClick={discardNewWavetable} className="grow-0 flex-end bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded">Discard Wavetable</button>
+            </div>
+          </>
+        ) : (<></>)}
+      </div >
+    </div>
+  )
 };
 
 export default WavetableCreator;

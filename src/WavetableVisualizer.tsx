@@ -45,7 +45,7 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
     <div className='flex flex-col gap-6'>
       <div className="flex flex-row gap-4">
 
-        <ButtonGroup options={[{ value: 'table', label: 'Table' }, { value: 'single', label: 'Single' }]} defaultSelected={selectedChartType} onSelect={handleSelectChartType} />
+        <ButtonGroup options={[{ value: 'table', label: 'Table' }, { value: 'single', label: 'Single' }]} selected={selectedChartType} onSelect={handleSelectChartType} />
         <div className="inline-flex grow w-32 gap-2">
           <input
             type="range"

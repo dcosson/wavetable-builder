@@ -47,7 +47,53 @@ export const generateWaveform = (shape: WaveShape, samplesPerFrame: number): Wav
   return waveform;
 };
 
-export const generateWavetable = (keyframes: WaveformDataWithKeyframe[], numberFrames: number, samplesPerFrame: number): WavetableWithKeyframes | undefined => {
+const spreadKeyframes = (keyframes: WaveformData[], numberFrames: number): WaveformDataWithKeyframe[] => {
+  return keyframes.map((data, idx) => {
+    const newFramePct = idx / (keyframes.length - 1);
+    return {
+      frame: Math.round(newFramePct * (numberFrames - 1)),
+      data: data
+    };
+  });
+}
+
+export const generateWavetable = (keyframes: WaveformData[], numberFrames: number, samplesPerFrame: number): WavetableWithKeyframes | undefined => {
+  // Validate keyframes
+  if (keyframes.length < 2) {
+    console.error("At least two keyframes are required");
+    return;
+  }
+  for (let i = 0; i < keyframes.length; i++) {
+    if (keyframes[i].length != samplesPerFrame) {
+      console.error(`Expected all waveforms to have ${samplesPerFrame}, but keyframe ${i} has ${keyframes[i].length} samples`);
+      return;
+    }
+  }
+
+  const keyframeValues = spreadKeyframes(keyframes, numberFrames);
+
+  const newWavetable: WavetableWithKeyframes = { keyframes: new Set([]), data: [] }
+
+  for (let i = 0; i < keyframeValues.length - 1; i++) {
+    const startKeyframe = keyframeValues[i];
+    const endKeyframe = keyframeValues[i + 1];
+    const startWaveform = startKeyframe.data;
+    const endWaveform = endKeyframe.data;
+
+    for (let frame = startKeyframe.frame; frame <= endKeyframe.frame; frame++) {
+      const t = (frame - startKeyframe.frame) / (endKeyframe.frame - startKeyframe.frame);
+      newWavetable.data[frame] = interpolateWaveforms(startWaveform, endWaveform, t);
+    }
+  }
+
+  keyframeValues.forEach(kf => {
+    newWavetable.keyframes.add(kf.frame);
+  })
+
+  return newWavetable;
+}
+
+export const generateWavetableOld = (keyframes: WaveformDataWithKeyframe[], numberFrames: number, samplesPerFrame: number): WavetableWithKeyframes | undefined => {
   // Sort Keyframes and validate
   if (keyframes.length < 2) {
     console.error("At least two keyframes are required");
