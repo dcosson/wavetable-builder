@@ -3,6 +3,7 @@ import type { WavetableWithKeyframes } from './wavetableUtils';
 import ButtonGroup from './ButtonGroup';
 import SingleWaveformChart from './SingleWaveformChart';
 import TableWaveformChart from './TableWaveformChart';
+import waveformBackgroundImage from './assets/waveformBackgroundImage.svg'
 import * as d3 from 'd3';
 
 type ChartType = 'single' | 'table';
@@ -37,7 +38,16 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
 
   if (wavetable === undefined) {
     return (
-      <div>Error - no valid waveform</div>
+      <div className='flex flex-row'>
+        <div className='flex flex-row items-start grow min-h-48 border-solid border-2 border-slate-300 rounded-md' style={{
+          backgroundImage: `url(${waveformBackgroundImage})`,
+          backgroundRepeat: 'no-repeat',
+          backgroundClip: 'content-box',
+          backgroundSize: 'cover'
+        }}>
+          <h2 className='text-center p-4 font-bold text-slate-500 bg-slate-100 rounded-md bg-opacity-60'>No Wavetable loaded</h2>
+        </div>
+      </div >
     )
   }
 

@@ -3,10 +3,10 @@ export interface WaveformDataWithKeyframe {
   frame: number;
   data: WaveformData;
 }
-export type Wavetable = WaveformData[];
+export type WavetableData = WaveformData[];
 export interface WavetableWithKeyframes {
   keyframes: Set<number>,
-  data: Wavetable,
+  data: WavetableData,
 }
 
 export type WaveShape = 'none' | 'sine' | 'square' | 'sawtooth' | 'triangle';
