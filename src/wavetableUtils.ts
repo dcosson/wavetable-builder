@@ -1,4 +1,4 @@
-export type WaveformData = number[];
+export type WaveformData = Float32Array;
 interface WaveformDataWithKeyframe {
   frame: number;
   data: WaveformData;
@@ -23,7 +23,7 @@ export const LabeledWaveShapes: LabeledWaveShape[] = [
 
 
 export const generateWaveform = (shape: WaveShape, samplesPerFrame: number): WaveformData => {
-  const waveform = new Array(samplesPerFrame).fill(0);
+  const waveform = new Float32Array(samplesPerFrame).fill(0);
   const frequency = 1; // One cycle per frame
 
   for (let i = 0; i < samplesPerFrame; i++) {
@@ -59,7 +59,7 @@ const spreadKeyframes = (keyframes: WaveformData[], numberFrames: number): Wavef
   });
 }
 
-export const generateWavetable = (keyframes: WaveformData[], numberFrames: number, samplesPerFrame: number): WavetableWithMetadata | undefined => {
+export const generateWavetable = (keyframes: WaveformData[], numberFrames: number, samplesPerFrame: number, name?: string, presetNumber?: number): WavetableWithMetadata | undefined => {
   // Validate keyframes
   if (keyframes.length < 2) {
     console.error("At least two keyframes are required");
@@ -74,7 +74,7 @@ export const generateWavetable = (keyframes: WaveformData[], numberFrames: numbe
 
   const keyframeValues = spreadKeyframes(keyframes, numberFrames);
 
-  const newWavetable: WavetableWithMetadata = { keyframes: new Set([]), data: [] }
+  const newWavetable: WavetableWithMetadata = { keyframes: new Set([]), data: [], name, presetNumber }
 
   for (let i = 0; i < keyframeValues.length - 1; i++) {
     const startKeyframe = keyframeValues[i];

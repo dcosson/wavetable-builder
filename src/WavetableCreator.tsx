@@ -26,7 +26,7 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
 
   const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(-1);
   const [name, setName] = useState<string>('Empty Wavetable');
-  const [presetNumber, setPresetNumber] = useState<number | null>(null);
+  const [presetNumber, setPresetNumber] = useState<number | undefined>(undefined);
   const [wavetableKeyframes, setWavetableKeyframes] = useState<WaveformWithMetadata[]>([]);
 
   const currentWaveform = wavetableKeyframes[currentFrameIndex];
@@ -35,12 +35,12 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
     if (wavetableKeyframes.length == 0) {
       wavetableChanged(undefined);
     }
-    const wavetable = generateWavetable(wavetableKeyframes.map(w => w.data), numberFrames, samplesPerFrame);
+    const wavetable = generateWavetable(wavetableKeyframes.map(w => w.data), numberFrames, samplesPerFrame, name, presetNumber);
     if (wavetable) {
       wavetableChanged(wavetable);
       console.log('wavetable changed', wavetable)
     }
-  }, [wavetableKeyframes]);
+  }, [wavetableKeyframes, name, presetNumber]);
 
   const newWavetableHandler = () => {
     setInProgress(true);
@@ -93,7 +93,7 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
   }
 
   if (!inProgress) {
-    const text = wavetableKeyframes.length == 0 ? 'New Wavetable' : 'Edit Wavetable';
+    const text = wavetableKeyframes.length == 0 ? 'Build New Wavetable' : 'Edit Wavetable';
     return (
       <div className="flex-row my-8">
         <button className="center bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded" onClick={newWavetableHandler}>{text}</button>
@@ -110,7 +110,7 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
           <input className="border border-gray-900 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-1 min-w-36" type="text" value={name} onChange={nameHandler}></input>
           <div className='grow' />
           <label >Preset Number</label>
-          <input className="border border-gray-900 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-1 w-auto" type="number" value={presetNumber == null ? '' : presetNumber} onChange={presetNumberHandler}></input>
+          <input className="border border-gray-900 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-1 w-auto" type="number" value={presetNumber == undefined ? '' : presetNumber} onChange={presetNumberHandler}></input>
         </div>
 
         <div className='flex flex-row gap-2 h-8'>

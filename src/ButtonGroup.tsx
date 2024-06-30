@@ -28,8 +28,8 @@ const ButtonGroup = <T extends React.Key,>({ options, selected, onSelect }: Butt
             ${index === options.length - 1 ? 'rounded-r-lg' : ''}
             ${index > 0 ? '-ml-px' : ''}
             border font-medium
-            ${selected === option.value ? 'bg-indigo-500 text-white' : 'bg-white text-gray-900'}
-            align-middle hover:bg-indigo-600 hover:text-white focus:z-10 focus:outline-none
+            ${selected === option.value ? 'bg-blue-500 text-white' : 'bg-white text-gray-900'}
+            align-middle hover:bg-blue-700 hover:text-white focus:z-10 focus:outline-none
             transition-all text-sm
           `}
           onClick={() => handleClick(option.value)}

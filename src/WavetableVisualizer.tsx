@@ -39,13 +39,15 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
   if (wavetable === undefined) {
     return (
       <div className='flex flex-row'>
-        <div className='flex flex-row items-start grow min-h-48 border-solid border-2 border-slate-300 rounded-md' style={{
+        <div className='flex flex-row items-center grow min-h-48 border-solid border-2 border-slate-500 rounded-md' style={{
           backgroundImage: `url(${waveformBackgroundImage})`,
           backgroundRepeat: 'no-repeat',
           backgroundClip: 'content-box',
           backgroundSize: 'cover'
         }}>
-          <h2 className='text-center p-4 font-bold text-slate-500 bg-slate-100 rounded-md bg-opacity-60'>No Wavetable loaded</h2>
+          <div className='grow'></div>
+          <h2 className='text-center p-4 font-bold text-slate-500 bg-slate-100 rounded-md bg-opacity-85'>No Wavetable loaded</h2>
+          <div className='grow'></div>
         </div>
       </div >
     )
@@ -53,9 +55,16 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
 
   return (
     <div className='flex flex-col gap-6'>
-      <div className="flex flex-row gap-4">
 
-        <ButtonGroup options={[{ value: 'table', label: 'Table' }, { value: 'single', label: 'Single' }]} selected={selectedChartType} onSelect={handleSelectChartType} />
+      <div className="flex flex-row gap-4">
+        <h2 className='text-left'>{wavetable.name}</h2>
+        <div className='grow'></div>
+        {wavetable.presetNumber !== undefined &&
+          (<h3 className='text-right'>Preset: {wavetable.presetNumber}</h3>)
+        }
+      </div>
+      <div className="flex flex-row gap-4">
+        <ButtonGroup options={[{ value: 'table', label: 'Table' }, { value: 'single', label: 'Waveform' }]} selected={selectedChartType} onSelect={handleSelectChartType} />
         <div className="inline-flex grow w-32 gap-2">
           <input
             type="range"
@@ -63,7 +72,7 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
             max={numberFrames - 1}
             value={selectedFrame}
             onChange={handleFrameChange}
-            className="w-full"
+            className="w-full accent-blue-500 hover:accent-blue-700"
           />
           <p className="my-auto">Frame:&nbsp;{selectedFrame}</p>
         </div>
