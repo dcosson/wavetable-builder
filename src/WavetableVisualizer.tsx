@@ -16,14 +16,12 @@ interface WavetableSynthVisualizerProps {
   width?: number;
   height?: number;
   wavetable?: WavetableWithMetadata;
-  numberFrames?: number;
 }
 
 const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
   width = 800,
   height = 400,
   wavetable,
-  numberFrames = 64,
 }) => {
   const [selectedFrame, setSelectedFrame] = useState(0);
   const [selectedChartType, setSelectedChartType] = useState<ChartType>('table');
@@ -69,7 +67,7 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
           <input
             type="range"
             min={0}
-            max={numberFrames - 1}
+            max={wavetable.numberFrames - 1}
             value={selectedFrame}
             onChange={handleFrameChange}
             className="w-full accent-blue-500 hover:accent-blue-700"
@@ -83,7 +81,7 @@ const WavetableSynthVisualizer: React.FC<WavetableSynthVisualizerProps> = ({
           data={wavetable.data[selectedFrame]}
           width={width}
           height={height}
-          lineColor={colorScale(selectedFrame / numberFrames)}
+          lineColor={colorScale(selectedFrame / wavetable.numberFrames)}
           hideChart={selectedChartType != 'single'}
         />
         <TableWaveformChart

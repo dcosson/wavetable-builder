@@ -14,14 +14,10 @@ interface WaveformWithMetadata {
 }
 
 interface WavetableCreatorProps {
-  numberFrames: number;
-  samplesPerFrame: number;
   wavetableChanged(wavetable: WavetableWithMetadata | undefined): any;
 }
 
 const WavetableCreator: React.FC<WavetableCreatorProps> = ({
-  numberFrames,
-  samplesPerFrame,
   wavetableChanged,
 }) => {
   const [inProgress, setInProgress] = useState<boolean>(false);
@@ -33,6 +29,8 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
   const [name, setName] = useState<string>('Empty Wavetable');
   const [presetNumber, setPresetNumber] = useState<number | undefined>(undefined);
   const [wavetableKeyframes, setWavetableKeyframes] = useState<WaveformWithMetadata[]>([]);
+  const [numberFrames, _setNumberFrames] = useState<number>(64);
+  const [samplesPerFrame, _setSamplesPerFrame] = useState<number>(256);
 
   const ButtonOptions: ButtonOption<WaveShape>[] = [...LabeledWaveShapes];
   ButtonOptions[ButtonOptions.length - 1].disabled = true;

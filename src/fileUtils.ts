@@ -1,7 +1,7 @@
 import type { WavetableWithMetadata } from "./wavetableUtils";
 const ValidSampleSizes = [256, 512, 1024, 2048, 4096];
 
-export async function loadWavetable(file: File, numFrames: number = 64, samplesPerFrame?: number): Promise<WavetableWithMetadata> {
+export async function loadWavetable(file: File, numberFrames: number = 64, samplesPerFrame?: number): Promise<WavetableWithMetadata> {
   // Read the file as an ArrayBuffer
   const arrayBuffer = await file.arrayBuffer();
   const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -14,14 +14,14 @@ export async function loadWavetable(file: File, numFrames: number = 64, samplesP
 
   // If samplesPerFrame is not provided, calculate it
   if (samplesPerFrame === undefined) {
-    if (audioData.length % numFrames !== 0) {
+    if (audioData.length % numberFrames !== 0) {
       throw new Error('The number of samples in the audio file must be an even multiple of the number of frames');
     }
-    samplesPerFrame = audioData.length / numFrames;
+    samplesPerFrame = audioData.length / numberFrames;
   }
 
   // Calculate the total number of samples we need
-  const totalSamples = numFrames * samplesPerFrame;
+  const totalSamples = numberFrames * samplesPerFrame;
 
   // Ensure we have enough samples in the audio file
   if (audioData.length < totalSamples) {
@@ -36,7 +36,7 @@ export async function loadWavetable(file: File, numFrames: number = 64, samplesP
   const data: Float32Array[] = [];
 
   // Fill the wavetable
-  for (let i = 0; i < numFrames; i++) {
+  for (let i = 0; i < numberFrames; i++) {
     const frame = new Float32Array(samplesPerFrame);
     for (let j = 0; j < samplesPerFrame; j++) {
       const index = i * samplesPerFrame + j;
@@ -47,8 +47,8 @@ export async function loadWavetable(file: File, numFrames: number = 64, samplesP
   const { name, presetNumber } = parseName(file.name);
 
   // When loading wavetable from a wav file, treat every frame as a keyframe
-  const keyframes = new Set(Array.from({ length: numFrames }).map((_, i) => i));
-  return { name, presetNumber, keyframes, data }
+  const keyframes = new Set(Array.from({ length: numberFrames }).map((_, i) => i));
+  return { name, presetNumber, keyframes, numberFrames, samplesPerFrame, data }
 }
 
 const parseName = (fileName: string): { name: string, presetNumber?: number } => {

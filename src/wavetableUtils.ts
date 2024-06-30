@@ -8,6 +8,8 @@ export interface WavetableWithMetadata {
   name?: string;
   presetNumber?: number;
   keyframes: Set<number>,
+  numberFrames: number,
+  samplesPerFrame: number,
   data: WavetableData,
 }
 
@@ -75,7 +77,7 @@ export const generateWavetable = (keyframes: WaveformData[], numberFrames: numbe
 
   const keyframeValues = spreadKeyframes(keyframes, numberFrames);
 
-  const newWavetable: WavetableWithMetadata = { keyframes: new Set([]), data: [], name, presetNumber }
+  const newWavetable: WavetableWithMetadata = { keyframes: new Set([]), data: [], name, presetNumber, numberFrames, samplesPerFrame }
 
   for (let i = 0; i < keyframeValues.length - 1; i++) {
     const startKeyframe = keyframeValues[i];
