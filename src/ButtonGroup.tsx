@@ -1,8 +1,9 @@
 import React from 'react';
 
-interface ButtonOption<T> {
+export interface ButtonOption<T> {
   value: T;
   label: string;
+  disabled?: boolean;
 }
 
 interface ButtonGroupProps<T> {

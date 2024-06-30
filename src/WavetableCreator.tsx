@@ -4,7 +4,9 @@ import { LabeledWaveShapes, generateWaveform, generateWavetable } from './waveta
 import { insertAtIndex } from './utils'
 import SingleWaveformChart from './SingleWaveformChart';
 import ButtonGroup from './ButtonGroup';
+import type { ButtonOption } from './ButtonGroup';
 import { TrashIcon } from '@heroicons/react/24/solid';
+import { loadWavetable } from './fileUtils';
 
 interface WaveformWithMetadata {
   data: WaveformData;
@@ -29,11 +31,14 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
   const [presetNumber, setPresetNumber] = useState<number | undefined>(undefined);
   const [wavetableKeyframes, setWavetableKeyframes] = useState<WaveformWithMetadata[]>([]);
 
+  const ButtonOptions: ButtonOption<WaveShape>[] = [...LabeledWaveShapes];
+  ButtonOptions[ButtonOptions.length - 1].disabled = true;
   const currentWaveform = wavetableKeyframes[currentFrameIndex];
 
   useEffect(() => {
-    if (wavetableKeyframes.length == 0) {
+    if (wavetableKeyframes.length < 2) {
       wavetableChanged(undefined);
+      return
     }
     const wavetable = generateWavetable(wavetableKeyframes.map(w => w.data), numberFrames, samplesPerFrame, name, presetNumber);
     if (wavetable) {
@@ -85,6 +90,30 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
     setPresetNumber(Number(e.target.value));
   }
 
+  const fileDropHandler = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (e.dataTransfer.files.length != 1) {
+      console.error("Please upload 1 file at a time");
+      return
+    }
+    const file = e.dataTransfer.files[0];
+    loadWavetable(file).then((newWavetable) => {
+      console.log('loaded file', newWavetable)
+      wavetableChanged(newWavetable);
+      setInProgress(true);
+      setName(newWavetable.name || 'Uploaded Wavetable');
+      setPresetNumber(newWavetable.presetNumber);
+      const newKeyframes: WaveformWithMetadata[] = newWavetable.data.map(v => ({ data: v, shapeSelection: 'custom' }));
+      setWavetableKeyframes(newKeyframes);
+      setCurrentFrameIndex(0);
+    });
+
+  }
+
+  const fileDragHandler = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  }
+
   const currentShapeSelectionHandler = (shapeSelection: WaveShape) => {
     const data = generateWaveform(shapeSelection, samplesPerFrame);
     const newKeyframes = [...wavetableKeyframes];
@@ -95,8 +124,19 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
   if (!inProgress) {
     const text = wavetableKeyframes.length == 0 ? 'Build New Wavetable' : 'Edit Wavetable';
     return (
-      <div className="flex-row my-8">
+      <div className="flex flex-row items-center my-8">
         <button className="center bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded" onClick={newWavetableHandler}>{text}</button>
+        <div className='grow'></div>
+        <div className='flex flex-col h-16 border border-2 border-gslate-500 px-4 text-slate-500 rounded-md'
+          onDrop={fileDropHandler}
+          onDragOver={fileDragHandler}
+          onDragEnter={fileDragHandler}
+          onDragLeave={fileDragHandler}
+        >
+          <div className='grow'></div>
+          <h3 className='text-center'>Drag Wavetable File</h3>
+          <div className='grow'></div>
+        </div>
       </div>
     );
   }
@@ -129,7 +169,7 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
           <div>
             <div className="flex flex-row gap-2">
               <div className="grow">
-                <ButtonGroup options={LabeledWaveShapes} selected={currentWaveform.shapeSelection} onSelect={currentShapeSelectionHandler} />
+                <ButtonGroup options={ButtonOptions} selected={currentWaveform.shapeSelection} onSelect={currentShapeSelectionHandler} />
               </div>
               <button onClick={deleteFrame} className="w-8 grow-0 flex-end bg-red-500 hover:bg-red-700 text-white py-1 px-2 rounded">
                 <TrashIcon />

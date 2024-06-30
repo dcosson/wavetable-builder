@@ -11,7 +11,7 @@ export interface WavetableWithMetadata {
   data: WavetableData,
 }
 
-export type WaveShape = 'none' | 'sine' | 'square' | 'sawtooth' | 'triangle';
+export type WaveShape = 'none' | 'sine' | 'square' | 'sawtooth' | 'triangle' | 'custom';
 export type LabeledWaveShape = { 'value': WaveShape, 'label': string };
 export const LabeledWaveShapes: LabeledWaveShape[] = [
   { value: 'none', label: 'None' },
@@ -19,6 +19,7 @@ export const LabeledWaveShapes: LabeledWaveShape[] = [
   { value: 'square', label: 'Sqr' },
   { value: 'sawtooth', label: 'Saw' },
   { value: 'triangle', label: 'Tri' },
+  { value: 'custom', label: 'Custom' },
 ];
 
 
