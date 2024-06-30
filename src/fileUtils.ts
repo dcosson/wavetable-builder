@@ -69,3 +69,88 @@ const parseName = (fileName: string): { name: string, presetNumber?: number } =>
   const name = fullName.slice(0, 14);
   return { name, presetNumber }
 }
+
+
+function convertFloatToBlofeld(data: Float32Array, wavetableName: string, slot: number): Uint8Array {
+  // Validate input
+  if (slot < 80 || slot > 118) {
+    throw new Error('Slot must be between 80 and 118');
+  }
+  if (wavetableName.length > 14 || !isValidName(wavetableName)) {
+    throw new Error('Wavetable name must be less than 14 ASCII characters long');
+  }
+
+  const expectedSamples = 64 * 128;
+  if (data.length !== expectedSamples) {
+    throw new Error(`Float array must have ${expectedSamples} samples`);
+  }
+
+  // Convert float samples to 21-bit integer samples
+  const max = 1048575; // 21-bit values are in [-1048575, 1048575]
+  const samples = new Int32Array(64 * 128);
+
+  for (let i = 0; i < 64 * 128; i++) {
+    const floatSample = Math.max(-1, Math.min(1, data[i])); // Clamp to [-1, 1]
+    samples[i] = Math.round(floatSample * max);
+  }
+
+  // Generate SysEx data
+  const sysExData = new Uint8Array(64 * 410); // 64 waves * 410 bytes per wave
+  let dataIndex = 0;
+
+  for (let wave = 0; wave < 64; ++wave) {
+    sysExData[dataIndex++] = 0xf0; // SysEx
+    sysExData[dataIndex++] = 0x3e; // Waldorf ID
+    sysExData[dataIndex++] = 0x13; // Blofeld ID
+    sysExData[dataIndex++] = 0x00; // Device ID
+    sysExData[dataIndex++] = 0x12; // Wavetable Dump
+    sysExData[dataIndex++] = 0x50 + slot - 80; // Wavetable Number
+    sysExData[dataIndex++] = wave & 0x7f; // Wave Number
+    sysExData[dataIndex++] = 0x00; // Format
+
+    // Actual samples
+    for (let i = 0; i < 128; ++i) {
+      const sampleValue = samples[i + wave * 128];
+      sysExData[dataIndex++] = (sampleValue >> 14) & 0x7f;
+      sysExData[dataIndex++] = (sampleValue >> 7) & 0x7f;
+      sysExData[dataIndex++] = sampleValue & 0x7f;
+    }
+
+    // Wavetable name
+    for (let i = 0; i < 14; ++i) {
+      sysExData[dataIndex++] = wavetableName.charCodeAt(i) & 0x7f;
+    }
+
+    sysExData[dataIndex++] = 0x0; // Reserved
+    sysExData[dataIndex++] = 0x0; // Reserved
+
+    // Calculate checksum
+    let checksum = 0;
+    for (let i = dataIndex - 401; i < dataIndex; i++) {
+      checksum += sysExData[i];
+    }
+    sysExData[dataIndex++] = checksum & 0x7f;
+
+    sysExData[dataIndex++] = 0xf7; // End
+  }
+
+  return sysExData;
+}
+
+function isValidName(s: string): boolean {
+  return s.split('').every(c => c.charCodeAt(0) >= 0x20 && c.charCodeAt(0) <= 0x7f);
+}
+
+function saveSysExToFile(sysExData: Uint8Array, fileName: string): void {
+  const blob = new Blob([sysExData], { type: 'application/octet-stream' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export { convertFloatToBlofeld, saveSysExToFile };

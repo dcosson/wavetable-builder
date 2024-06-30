@@ -99,3 +99,116 @@ export const generateWavetable = (keyframes: WaveformData[], numberFrames: numbe
 const interpolateWaveforms = (waveform1: WaveformData, waveform2: WaveformData, t: number): WaveformData => {
   return waveform1.map((v, i) => v * (1 - t) + waveform2[i] * t);
 };
+
+
+export async function downsampleAudio(inputBuffer: Float32Array, originalSampleRate: number, targetSampleRate: number): Promise<Float32Array> {
+  const audioContext = new window.AudioContext();
+
+  // Create a buffer source
+  const sourceBuffer = audioContext.createBuffer(1, inputBuffer.length, originalSampleRate);
+  sourceBuffer.getChannelData(0).set(inputBuffer);
+
+  const source = audioContext.createBufferSource();
+  source.buffer = sourceBuffer;
+
+  // Create a BiquadFilterNode for low-pass filtering
+  const lowPassFilter = audioContext.createBiquadFilter();
+  lowPassFilter.type = 'lowpass';
+  lowPassFilter.frequency.setValueAtTime(targetSampleRate / 2, audioContext.currentTime);
+
+  // Create an OfflineAudioContext for processing
+  const offlineCtx = new OfflineAudioContext(1, inputBuffer.length * targetSampleRate / originalSampleRate, targetSampleRate);
+
+  // Connect nodes
+  source.connect(lowPassFilter);
+  lowPassFilter.connect(offlineCtx.destination);
+
+  // Start the source and run the offline context
+  source.start(0);
+  const renderedBuffer = await offlineCtx.startRendering();
+
+  // Extract the resampled data
+  return renderedBuffer.getChannelData(0);
+}
+
+// Usage example
+// async function example() {
+//   const originalAudio = new Float32Array(/* your audio data */);
+//   const originalSampleRate = 44100;
+//   const targetSampleRate = 22050;
+//
+//   try {
+//     const downsampledAudio = await downsampleAudio(originalAudio, originalSampleRate, targetSampleRate);
+//     console.log('Downsampled audio:', downsampledAudio);
+//   } catch (error) {
+//     console.error('Error downsampling audio:', error);
+//   }
+// }
+
+export async function upsampleAudio(inputBuffer: Float32Array, originalSampleRate: number, targetSampleRate: number): Promise<Float32Array> {
+  const audioContext = new window.AudioContext();
+
+  // Create a buffer source
+  const sourceBuffer = audioContext.createBuffer(1, inputBuffer.length, originalSampleRate);
+  sourceBuffer.getChannelData(0).set(inputBuffer);
+
+  const source = audioContext.createBufferSource();
+  source.buffer = sourceBuffer;
+
+  // Create an OfflineAudioContext for processing
+  const offlineCtx = new OfflineAudioContext(1, inputBuffer.length * targetSampleRate / originalSampleRate, targetSampleRate);
+
+  // Connect source to offline context
+  source.connect(offlineCtx.destination);
+
+  // Start the source and run the offline context
+  source.start(0);
+  const renderedBuffer = await offlineCtx.startRendering();
+
+  // Extract the resampled data
+  return renderedBuffer.getChannelData(0);
+}
+
+// // Usage example
+// async function example() {
+//     const originalAudio = new Float32Array(/* your audio data */);
+//     const originalSampleRate = 22050;
+//     const targetSampleRate = 44100;
+//     
+//     try {
+//         const upsampledAudio = await upsampleAudio(originalAudio, originalSampleRate, targetSampleRate);
+//         console.log('Upsampled audio:', upsampledAudio);
+//     } catch (error) {
+//         console.error('Error upsampling audio:', error);
+//     }
+// }
+
+
+export function downsample2xSimple(input: Float32Array): Float32Array {
+  const output = new Float32Array(Math.ceil(input.length / 2));
+
+  for (let i = 0; i < output.length; i++) {
+    output[i] = input[i * 2];
+  }
+
+  return output;
+}
+
+export function upsample2xSimple(input: Float32Array): Float32Array {
+  const output = new Float32Array(input.length * 2);
+
+  for (let i = 0; i < input.length - 1; i++) {
+    const currentSample = input[i];
+    const nextSample = input[i + 1];
+    const interpolatedSample = (currentSample + nextSample) / 2;
+
+    output[i * 2] = currentSample;
+    output[i * 2 + 1] = interpolatedSample;
+  }
+
+  // Handle the last sample
+  output[output.length - 2] = input[input.length - 1];
+  output[output.length - 1] = input[input.length - 1];
+
+  return output;
+}
