@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { WaveformData, WaveShape, WavetableWithMetadata } from './wavetableUtils';
 import { LabeledWaveShapes, generateWaveform, generateWavetable } from './wavetableUtils';
 import { insertAtIndex } from './utils'
@@ -25,6 +25,9 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
   wavetableChanged,
 }) => {
   const [inProgress, setInProgress] = useState<boolean>(false);
+  const mouseDownAudioTimeout = useRef<number>(0);
+  const mediaRecorderRef = useRef<MediaRecorder | undefined>(undefined);
+  const [_, setAudioFileContent] = useState<Float32Array | undefined>(undefined);
 
   const [currentFrameIndex, setCurrentFrameIndex] = useState<number>(-1);
   const [name, setName] = useState<string>('Empty Wavetable');
@@ -96,8 +99,33 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
       console.error("Please upload 1 file at a time");
       return
     }
-    const file = e.dataTransfer.files[0];
-    loadWavetable(file).then((newWavetable) => {
+    uploadWavetableFileHandler(e.dataTransfer.files[0]);
+  }
+
+  const fileClickHandler = (_: React.MouseEvent<HTMLDivElement>) => {
+    //@ts-ignore not recognizing this method on window
+    window.showOpenFilePicker().then((fsHandle: FileSystemFileHandle[]) => {
+      if (fsHandle.length != 1) {
+        console.error("Please pick 1 file at a time");
+        return
+      }
+      if (fsHandle[0].kind != 'file') {
+        console.error("Please pick a file not a directory");
+        return
+      }
+      fsHandle[0].getFile().then(file => {
+        uploadWavetableFileHandler(file);
+      });
+    });
+
+  }
+
+  const fileDragHandler = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+  }
+
+  const uploadWavetableFileHandler = (file: File) => {
+    loadWavetable(file).then(newWavetable => {
       console.log('loaded file', newWavetable)
       wavetableChanged(newWavetable);
       setInProgress(true);
@@ -107,12 +135,57 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
       setWavetableKeyframes(newKeyframes);
       setCurrentFrameIndex(0);
     });
-
   }
 
-  const fileDragHandler = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
+  const audioClickHandler = (_: React.MouseEvent<HTMLDivElement>) => {
+    if (mouseDownAudioTimeout.current > 0) {
+      clearTimeout(mouseDownAudioTimeout.current);
+      mouseDownAudioTimeout.current = 0;
+    }
+    if (mediaRecorderRef.current) {
+      console.log('stopping recording', mediaRecorderRef.current.state, mediaRecorderRef.current);
+      mediaRecorderRef.current.stream.getTracks().forEach(track => {
+        track.stop();
+      });
+      mediaRecorderRef.current.stop();
+      console.log('stopping recording 2', mediaRecorderRef.current.state, mediaRecorderRef.current);
+      mediaRecorderRef.current = undefined;
+      return;
+    }
   }
+
+  const audioMouseLeaveHandler = (_: React.MouseEvent<HTMLDivElement>) => {
+    if (mouseDownAudioTimeout.current > 0) {
+      clearTimeout(mouseDownAudioTimeout.current);
+      mouseDownAudioTimeout.current = 0;
+    }
+  }
+
+  const audioMouseDownHandler = (_: React.MouseEvent<HTMLDivElement>) => {
+    mouseDownAudioTimeout.current = setTimeout(audioMouseDownLongPress, 2000);
+  }
+  const audioMouseDownLongPress = () => {
+    if (mouseDownAudioTimeout.current == 0) {
+      return;
+    }
+
+    mouseDownAudioTimeout.current = 0;
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      console.log('starting recording');
+      mediaRecorderRef.current.start();
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        console.log('got blob', event);
+        event.data.arrayBuffer().then(buff => {
+          const audioContext = new AudioContext();
+          audioContext.decodeAudioData(buff).then(decodedBuff => {
+            setAudioFileContent(decodedBuff.getChannelData(0));
+          });
+        });
+      };
+    });
+  }
+
 
   const currentShapeSelectionHandler = (shapeSelection: WaveShape) => {
     const data = generateWaveform(shapeSelection, samplesPerFrame);
@@ -124,17 +197,29 @@ const WavetableCreator: React.FC<WavetableCreatorProps> = ({
   if (!inProgress) {
     const text = wavetableKeyframes.length == 0 ? 'Build New Wavetable' : 'Edit Wavetable';
     return (
-      <div className="flex flex-row items-center my-8">
-        <button className="center bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded" onClick={newWavetableHandler}>{text}</button>
+      <div className="flex flex-row my-8 min-h-12 gap-2">
+        <div className='flex'>
+          <button className="center bg-blue-500 hover:bg-blue-700 text-white py-1 px-2 rounded h-full" onClick={newWavetableHandler}>{text}</button>
+        </div>
         <div className='grow'></div>
-        <div className='flex flex-col h-16 border border-2 border-gslate-500 px-4 text-slate-500 rounded-md'
+        <div className='flex flex-col border border-2 border-slate-500 px-4 text-slate-500 rounded-md cursor-pointer hover:text-gray-50 hover:border-blue-700 hover:bg-blue-700'
+          onMouseDown={audioMouseDownHandler}
+          onMouseLeave={audioMouseLeaveHandler}
+          onClick={audioClickHandler}
+        >
+          <div className='grow'></div>
+          <h3 className='text-center'>Use Audio</h3>
+          <div className='grow'></div>
+        </div>
+        <div className='flex flex-col border border-2 border-slate-500 px-4 text-slate-500 rounded-md cursor-pointer hover:text-gray-50 hover:border-blue-700 hover:bg-blue-700'
+          onClick={fileClickHandler}
           onDrop={fileDropHandler}
           onDragOver={fileDragHandler}
           onDragEnter={fileDragHandler}
           onDragLeave={fileDragHandler}
         >
           <div className='grow'></div>
-          <h3 className='text-center'>Drag Wavetable File</h3>
+          <h3 className='text-center'>Upload Wavetable</h3>
           <div className='grow'></div>
         </div>
       </div>
